@@ -1,0 +1,103 @@
+{% extends "cve_records/base.html" %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+  .chart-wrapper { display:flex; gap:1rem; align-items:flex-start; flex-wrap:wrap; }
+  .chart-area { flex:1 1 600px; min-width:300px; }
+  .legend-area { width:280px; min-width:220px; }
+  .legend-item { display:flex; justify-content:space-between; align-items:center; padding:0.35rem 0; border-bottom:1px solid rgba(0,0,0,0.04); }
+  .legend-item:last-child { border-bottom: none; }
+  .legend-name { font-weight:600; }
+  .swatch { width:14px; height:14px; border-radius:3px; display:inline-block; }
+  .summary { margin-top:1rem; font-size:0.95rem; color:#444; }
+  .echarts-axis-label { font-size:0.85rem; color:#374151; }
+  /* Make legend swatches slightly larger on larger screens */
+  @media (min-width: 992px) {
+    .swatch { width:16px; height:16px; }
+  }
+  @media (max-width: 768px) {
+    .legend-area { width:100%; order:2 }
+    .chart-area { order:1 }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2 class="text-center mb-4">CVE History — Events Distribution</h2>
+
+  <div class="chart-wrapper">
+    <div class="legend-area card p-3">
+      <h5 class="mb-2">Top events</h5>
+      <div class="mb-2 text-muted small">Showing top {{ pie_data|length }} slices</div>
+      <div>
+        {% if pie_data %}
+          {% for item in pie_data %}
+            <div class="legend-item">
+              <div style="display:flex;align-items:center;gap:0.5rem">
+                <div class="swatch" data-color="{{ item.color }}"></div>
+                <div class="legend-name">{{ item.name }}</div>
+              </div>
+              <div class="legend-value text-muted">{{ item.value }} &nbsp; <small class="text-muted">({{ item.percentage }}%)</small></div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-muted">No chart data available.</div>
+        {% endif %}
+      </div>
+
+  <div class="summary">Total (all records): <strong>{{ pie_total }}</strong></div>
+    </div>
+
+    <div class="chart-area card p-3">
+      <div id="chart" style="width:100%;height:520px;"></div>
+    </div>
+  </div>
+
+  <script id="pie-data" type="application/json">{{ pie_data_json|default:"[]"|safe }}</script>
+  <script>
+    const PIE_DATA = JSON.parse(document.getElementById('pie-data').textContent || '[]');
+    const CHART_DATA = Array.isArray(PIE_DATA) ? PIE_DATA : [];
+    const CHART_COLORS = CHART_DATA.map(i => i.color).filter(Boolean);
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <script>
+    try {
+      const chartDom = document.getElementById('chart');
+      if (chartDom) {
+        const myChart = echarts.init(chartDom);
+        const option = {
+          color: CHART_COLORS.length ? CHART_COLORS : undefined,
+          tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+          legend: { show: false },
+          series: [
+            {
+              name: 'Events',
+              type: 'pie',
+              radius: ['40%', '70%'],
+              avoidLabelOverlap: false,
+              itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+              label: { show: false, position: 'center' },
+              emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+              labelLine: { show: true },
+              data: CHART_DATA
+            }
+          ]
+        };
+        myChart.setOption(option);
+        window.addEventListener('resize', () => myChart.resize());
+      }
+    } catch (err) {
+      console.error('Failed to render pie chart', err);
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.swatch').forEach(el => {
+        const c = el.getAttribute('data-color');
+        if (c) el.style.background = c;
+      });
+    });
+  </script>
+</div>
+{% endblock %}

@@ -1,0 +1,179 @@
+{% extends "cve_records/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="mb-0">CVE History Records</h2>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'cve_records:cve_history_chart' %}{% if query_params %}?{{ query_params }}{% endif %}" class="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm align-middle">
+                        <i class="bi bi-bar-chart me-1"></i>View Chart
+                    </a>
+                    <a href="{% url 'cve_records:cve_history_export' %}{% if query_params %}?{{ query_params }}{% endif %}" 
+                       class="btn btn-success btn-sm rounded-pill px-3 shadow-sm align-middle">
+                        <i class="bi bi-download me-1"></i>Export CSV
+                    </a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="get">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-md-2">{{ filter.form.cveId|as_crispy_field }}</div>
+                            <div class="col-12 col-md-2">{{ filter.form.eventName|as_crispy_field }}</div>
+                            <div class="col-12 col-md-2">{{ filter.form.cveChangeId|as_crispy_field }}</div>
+                            <div class="col-12 col-md-2">{{ filter.form.sourceIdentifier|as_crispy_field }}</div>
+                            <div class="col-12 col-md-2">{{ filter.form.created_after|as_crispy_field }}</div>
+                            <div class="col-12 col-md-2">{{ filter.form.created_before|as_crispy_field }}</div>
+                        </div>
+                        <div class="row g-2 mt-2">
+                            <div class="col-12 d-flex justify-content-md-end justify-content-center">
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm align-middle">
+                                        <i class="bi bi-search me-1"></i>Search
+                                    </button>
+                                    <a href="?" class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-sm align-middle">
+                                        <i class="bi bi-x-circle me-1"></i>Clear
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th data-sort="cveId" style="cursor:pointer">
+                                CVE ID
+                                {% if sort_by == 'cveId' %}<i class="bi bi-sort-down sort-icon"></i>
+                                {% elif sort_by == '-cveId' %}<i class="bi bi-sort-up sort-icon"></i>{% endif %}
+                            </th>
+                            <th data-sort="eventName" style="cursor:pointer">
+                                Event
+                                {% if sort_by == 'eventName' %}<i class="bi bi-sort-down sort-icon"></i>
+                                {% elif sort_by == '-eventName' %}<i class="bi bi-sort-up sort-icon"></i>{% endif %}
+                            </th>
+                            <th data-sort="cveChangeId" style="cursor:pointer">
+                                CVE Change ID
+                                {% if sort_by == 'cveChangeId' %}<i class="bi bi-sort-down sort-icon"></i>
+                                {% elif sort_by == '-cveChangeId' %}<i class="bi bi-sort-up sort-icon"></i>{% endif %}
+                            </th>
+                            <th data-sort="sourceIdentifier" style="cursor:pointer">
+                                Source
+                                {% if sort_by == 'sourceIdentifier' %}<i class="bi bi-sort-down sort-icon"></i>
+                                {% elif sort_by == '-sourceIdentifier' %}<i class="bi bi-sort-up sort-icon"></i>{% endif %}
+                            </th>
+                            <th data-sort="created" style="cursor:pointer">
+                                Created
+                                {% if sort_by == 'created' %}<i class="bi bi-sort-down sort-icon"></i>
+                                {% elif sort_by == '-created' %}<i class="bi bi-sort-up sort-icon"></i>{% endif %}
+                            </th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in page_obj %}
+                        <tr>
+                            <td>{{ record.cveId }}</td>
+                            <td>{{ record.eventName|default:"-" }}</td>
+                            <td>{{ record.cveChangeId }}</td>
+                            <td>{{ record.sourceIdentifier|default:"-" }}</td>
+                            <td>{{ record.created|date:"Y-m-d H:i:s"|default:"-" }}</td>
+                            <td>
+                                {% if record.details %}
+                                <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#details-{{ record.id }}">
+                                    View
+                                </button>
+                                
+                                <div class="modal fade" id="details-{{ record.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Details for {{ record.cveId }}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <pre class="mb-0"><code>{{ record.details|pprint }}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="bi bi-inbox h4 d-block"></i>
+                                    No records found
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted">
+            Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} 
+            of {{ page_obj.paginator.count }} records
+        </div>
+        
+        <nav aria-label="Page navigation">
+            <ul class="pagination mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page=1" title="First page">
+                        <i class="bi bi-chevron-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if num > page_obj.number|add:'-4' and num < page_obj.number|add:'4' %}
+                        <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+                            <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.paginator.num_pages }}" title="Last page">
+                        <i class="bi bi-chevron-double-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
